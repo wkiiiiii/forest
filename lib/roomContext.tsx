@@ -92,7 +92,7 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     
     // Set player ID
-    setPlayerId(socket.id);
+    setPlayerId(socket.id || '');
 
     // Cleanup on unmount
     return () => {
