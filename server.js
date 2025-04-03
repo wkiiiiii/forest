@@ -2,15 +2,25 @@ const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 const { Server } = require('socket.io');
+const path = require('path');
+const fs = require('fs');
+
+// Load environment variables
+const dotenvPath = path.resolve(process.cwd(), '.env.local');
+if (fs.existsSync(dotenvPath)) {
+  require('dotenv').config({ path: dotenvPath });
+}
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
+const PORT = process.env.PORT || 3001;
 
 // Transaction type definitions
 const TRANSACTION_TYPE = {
   TRANSFER: 'transfer',
-  GM_EDIT: 'gm_edit'
+  GM_EDIT: 'gm_edit',
+  RESET: 'reset'
 };
 
 // Transaction history for each room
@@ -170,8 +180,15 @@ app.prepare().then(() => {
 
   const io = new Server(server, {
     cors: {
-      origin: '*',
+      origin: process.env.NODE_ENV === 'production' 
+        ? [
+            'https://forest-1-va6j.onrender.com', 
+            'https://forest-1.onrender.com', 
+            'https://*.onrender.com'
+          ] 
+        : '*',
       methods: ['GET', 'POST'],
+      credentials: true
     },
   });
 
@@ -394,9 +411,8 @@ app.prepare().then(() => {
     });
   });
 
-  const PORT = process.env.PORT || 3001;
   server.listen(PORT, (err) => {
     if (err) throw err;
-    console.log(`> Ready on http://localhost:${PORT}`);
+    console.log(`> Ready on ${process.env.NODE_ENV === 'production' ? 'your production URL' : `http://localhost:${PORT}`}`);
   });
 }); 

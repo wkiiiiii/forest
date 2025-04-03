@@ -73,9 +73,42 @@ let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 
 export const initializeSocket = () => {
   if (!socket) {
-    socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001', {
+    // Get the base URL from the environment or derive it from the browser
+    const getBaseUrl = () => {
+      if (typeof window !== 'undefined') {
+        // In the browser, use the same host but with the correct port
+        const protocol = window.location.protocol;
+        const hostname = window.location.hostname;
+        
+        // For localhost development
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+          return 'http://localhost:3001';
+        }
+        
+        // For production, use the same origin
+        return `${protocol}//${hostname}`;
+      }
+      
+      // Fallback to environment variable or default
+      return process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+    };
+    
+    const socketUrl = getBaseUrl();
+    console.log(`Connecting to socket at: ${socketUrl}`);
+    
+    socket = io(socketUrl, {
       autoConnect: true,
       reconnection: true,
+      transports: ['websocket', 'polling'],
+    });
+    
+    // Log connection events
+    socket.on('connect', () => {
+      console.log('Socket connected successfully');
+    });
+    
+    socket.on('connect_error', (err) => {
+      console.error('Socket connection error:', err);
     });
   }
   return socket;
